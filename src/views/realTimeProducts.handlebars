@@ -1,0 +1,155 @@
+<link rel="stylesheet" href=" https://cdn.jsdelivr.net/npm/sweetalert2@11.14.1/dist/sweetalert2.min.css">
+
+<div>
+    <h2>Productos</h2>
+</div>
+
+<div style="margin-top: 2em; border: 1px solid #666; padding: 1em; width: 360px;">
+    <p id="Prod" style="padding: 0; margin: 0;"></p>
+</div>
+
+<div style="margin-top: 2em; border: 1px solid #666; padding: 1em; width: 360px;">
+
+
+            <input type="text" id="title" name="title">
+            <br />
+
+            <button id="butLoa"> cargar producto </button>
+            <button id="butDel" href="/api/products/realtimeproducts"> borrar producto</button>
+
+</div>
+
+{{!-- <script src="/socket.io/socket.io.js"></script> --}}
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.1/dist/sweetalert2.all.min.js"></script>
+
+<script type="module">
+    const url = ''; // vacío para localhost
+    const options = {};
+    const user = { nickName: '' };
+    // Se crean referencias a elementos del DOM (párrafo con lista de mensajes y campo input para nuevos mensajes)
+    const prodList = document.getElementById('Prod');
+
+    const title = document.getElementById('title');
+    const boton_Carga = document.getElementById('butLoa');
+    const boton_borrar = document.getElementById('butDel');
+
+        
+    boton_Carga.addEventListener('click', () => {
+        
+        const data = {
+
+            title: title.value ,
+            description:"periferico",
+            code:"",
+            price:"",
+            status:"true",
+            stock:"",
+            category:""
+        }
+    
+        console.log(data);
+        fetch('/api/products/',{
+
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+
+        })
+        .then (response => response.json())
+        .then(data => {
+            console.log('respuesta del servidor', data)
+        })
+        .catch(error => {
+            console.error('error', error)
+        });
+
+    }); 
+
+    boton_borrar.addEventListener('click', () => {
+        
+        
+        const id = title.value;
+    
+        console.log(id);
+
+
+
+        fetch(`/api/products/${id}`, {
+        
+            method: 'DELETE'
+        
+        })
+        .then(response => response.json()) // Parseamos la respuesta a JSON
+        .then(data => {
+            console.log('Respuesta del servidor:', data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+        window.location.reload()
+       
+    }); 
+
+
+    // Solicita nickname de la persona
+    /* const askName = async () => {
+        const result = await Swal.fire({
+            title: 'Coder Chat 70275',
+            input: 'text',
+            text: 'Bienvenido!, indicá como quiere que te llamemos',
+            inputValidator: val => !val && 'Indicar tu nombre!',
+            allowOutsideClick: false
+        });
+
+        user.nickName = result.value || 'guest'; // invitado
+    } */
+
+    // Abre mensaje tipo toast que se oculta automáticamente después de 3 segs
+    /* const notify = (text) => {
+        Swal.fire({
+            text: text,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+        });
+    }*/
+
+    // Conexión al SERVIDOR websockets
+    const socketClient = io(url, options);
+
+    // Se habilita un listener atento a la conexión
+    // Cuando este cliente logra conectar con el servidor, se ejecuta este callback
+    socketClient.on('connect', async () => {
+        console.log(`Conectado servidor socket.io ${url}`);
+        //await askName();
+        // Se le envía el nickname al servidor
+        socketClient.emit('new_user_data', { user: user.nickName });
+    });
+
+    socketClient.on('productos', data => {
+        
+        //console.log(data)
+
+        prodList.innerHTML = '';
+       
+        data.forEach(msg => {
+            prodList.innerHTML += `<br /><strong>[${msg.id}</strong>] ${msg.title}`;
+        });
+
+    });
+
+    socketClient.on('new_general_msg', data => {
+        prodList.innerHTML += `<br /><strong>[${data.id}</strong>] ${data.title}`;
+    });
+    
+    /*// new_user lo genera el servidor cuando recibe datos de un usuario nuevo conectado
+    socketClient.on('new_user', data => {
+        notify(`${data.user} se ha conectado!`);
+    });*/
+
+</script>
